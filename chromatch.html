@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromatch: Color Matching Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-light: #f0f8ff;
+            --text-light: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-light: #2ecc71;
+            --accent-light: #e74c3c;
+            
+            --bg-dark: #1a1a2e;
+            --text-dark: #e0e0e0;
+            --primary-dark: #4a69bd;
+            --secondary-dark: #6ab04c;
+            --accent-dark: #eb4d4b;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        .background-animation div {
+            position: absolute;
+            border-radius: 50%;
+            animation: float 15s infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(20px); }
+            50% { transform: translateY(-40px) translateX(-20px); }
+            75% { transform: translateY(-20px) translateX(20px); }
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: titlePulse 2s infinite alternate;
+            cursor: pointer;
+        }
+        @keyframes titlePulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        .theme-switch {
+            display: flex;
+            align-items: center;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin: 0 10px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--accent-dark);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        main {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .game-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .rgb-symbols {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1rem;
+        }
+        .rgb-symbol {
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor;
+            animation: glow 2s infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 5px currentColor; }
+            to { text-shadow: 0 0 20px currentColor; }
+        }
+        .difficulty-buttons, .mode-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.1s;
+            background-color: var(--primary-light);
+            color: white;
+        }
+        button:hover {
+            transform: scale(1.05);
+            background-color: var(--secondary-light);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .color-display {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .color-box {
+            width: 150px;
+            height: 150px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+        .sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            cursor: pointer;
+            margin-top: -8px;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        #redSlider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #ff0000, #ff9999);
+        }
+        #greenSlider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #00ff00, #99ff99);
+        }
+        #blueSlider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #0000ff, #9999ff);
+        }
+        .game-info {
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        #colorHint {
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        #leaderboard {
+            margin-top: 2rem;
+            display: none;
+        }
+        #leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #leaderboard th, #leaderboard td {
+            padding: 0.5rem;
+            border: 1px solid var(--text-light);
+        }
+        .color-theory-info, .color-blind-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--accent-light);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #tutorial {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 80%;
+            display: none;
+        }
+        .close-tutorial {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background-color: var(--primary-light);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation" id="backgroundAnimation"></div>
+    <header>
+        <h1 id="homeButton">Chromatch</h1>
+        <div class="theme-switch">
+            <span></span>
+            <label class="switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider"></span>
+            </label>
+            <span></span>
+        </div>
+    </header>
+    <main>
+        <div class="game-container">
+            <div class="rgb-symbols">
+                <span class="rgb-symbol" style="color: red;">R</span>
+                <span class="rgb-symbol" style="color: green;">G</span>
+                <span class="rgb-symbol" style="color: blue;">B</span>
+            </div>
+            <div id="modeSelection">
+                <h2>Choose Game Mode</h2>
+                <div class="mode-buttons">
+                    <button id="classicMode">Classic</button>
+                    <button id="colorBlindMode">Color Blind</button>
+                </div>
+                <button id="tutorialBtn">How to Play</button>
+            </div>
+            <div id="difficultySelection" style="display: none;">
+                <h2>Choose Difficulty</h2>
+                <div class="difficulty-buttons">
+                    <button id="easyMode">Easy</button>
+                    <button id="mediumMode">Medium</button>
+                    <button id="hardMode">Hard</button>
+                </div>
+                <button class="back-button" id="backToDifficultyButton">Back</button>
+            </div>
+            <div id="gameArea" style="display: none;">
+                <div class="color-display">
+                    <div class="color-box" id="targetColor"></div>
+                    <div class="color-box" id="playerColor"></div>
+                </div>
+                <div class="sliders">
+                    <input type="range" id="redSlider" min="0" max="255" value="0">
+                    <input type="range" id="greenSlider" min="0" max="255" value="0">
+                    <input type="range" id="blueSlider" min="0" max="255" value="0">
+                </div>
+                <div id="hexCode"></div>
+                <div class="game-info">
+                    <p>Time Left: <span id="timeLeft"></span></p>
+                    <p>Score: <span id="score"></span></p>
+                    <p>Color: <span id="currentColor"></span> / <span id="totalColors"></span></p>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+                <div class="game-controls">
+                    <button id="startBtn">Start Game</button>
+                    <button id="pauseResumeBtn" style="display: none;">Pause</button>
+                    <button id="skipBtn" style="display: none;">Skip</button>
+                    <button id="hintBtn" style="display: none;">Hint</button>
+                </div>
+                <p id="colorHint"></p>
+                <div id="colorTheoryInfo" class="color-theory-info" style="display: none;"></div>
+                <div id="colorBlindInfo" class="color-blind-info" style="display: none;"></div>
+                <button class="back-button" id="backToHomeButton">Back to Home</button>
+            </div>
+            <div id="gameOver" style="display: none;">
+                <h2>Game Over!</h2>
+                <p>Your Score: <span id="finalScore"></span> / <span id="maxScore"></span></p>
+                <button id="playAgainBtn">Play Again</button>
+            </div>
+            <div id="leaderboard">
+                <h3>Leaderboard</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Score</th>
+                            <th>Mode</th>
+                            <th>Difficulty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <div id="tutorial">
+        <span class="close-tutorial">&times;</span>
+        <h2>How to Play Chromatch</h2>
+        <p>1. Choose a game mode: Classic or Color Blind.</p>
+        <p>2. Select a difficulty level: Easy, Medium, or Hard.</p>
+        <p>3. Use the sliders to adjust the RGB values and match the target color.</p>
+        <p>4. Click "Skip" to move to the next color if you're stuck.</p>
+        <p>5. Use "Hint" for a clue about the target color.</p>
+        <p>6. Try to match as many colors as you can before the time runs out!</p>
+        <p>Good luck and have fun!</p>
+    </div>
+
+    <script>
+        const themes = {
+            light: { 
+                background: 'var(--bg-light)', 
+                text: 'var(--text-light)', 
+                primary: 'var(--primary-light)', 
+                secondary: 'var(--secondary-light)',
+                accent: 'var(--accent-light)'
+            },
+            dark: { 
+                background: 'var(--bg-dark)', 
+                text: 'var(--text-dark)', 
+                primary: 'var(--primary-dark)', 
+                secondary: 'var(--secondary-dark)',
+                accent: 'var(--accent-dark)'
+            }
+        };
+
+        const difficultySettings = {
+            easy: { timePerColor: 60, colors: 5, maxScore: 500 },
+            medium: { timePerColor: 45, colors: 7, maxScore: 700 },
+            hard: { timePerColor: 30, colors: 10, maxScore: 1000 }
+        };
+
+        const modeSettings = {
+            classic: { name: 'Classic' },
+            colorBlind: { name: 'Color Blind' }
+        };
+
+        let currentTheme = 'light';
+        let currentMode = null;
+        let currentDifficulty = null;
+        let targetColors = [];
+        let currentColorIndex = 0;
+        let score = 0;
+        let timeLeft = 0;
+        let gameStatus = 'idle';
+        let gameInterval;
+        let leaderboard = [];
+
+        // Sound effects
+        const matchSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQV...');
+        const lowTimeSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQV...');
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.body.style.backgroundColor = themes[theme].background;
+            document.body.style.color = themes[theme].text;
+            document.querySelectorAll('button').forEach(btn => {
+                btn.style.backgroundColor = themes[theme].primary;
+                btn.style.color = 'white';
+            });
+            document.querySelector('header').style.background = theme === 'light' 
+                ? 'linear-gradient(135deg, var(--primary-light), var(--secondary-light))'
+                : 'linear-gradient(135deg, var(--primary-dark), var(--secondary-dark))';
+            document.querySelectorAll('input[type="range"]::-webkit-slider-thumb').forEach(thumb => {
+                thumb.style.backgroundColor = themes[theme].accent;
+            });
+        }
+
+        function generateRandomColor() {
+            return {
+                r: Math.floor(Math.random() * 256),
+                g: Math.floor(Math.random() * 256),
+                b: Math.floor(Math.random() * 256)
+            };
+        }
+
+        function rgbToString(color) {
+            return `rgb(${color.r}, ${color.g}, ${color.b})`;
+        }
+
+        function rgbToHex(color) {
+            return "#" + ((1 << 24) + (color.r << 16) + (color.g << 8) + color.b).toString(16).slice(1);
+        }
+
+        function startGame() {
+            const settings = difficultySettings[currentDifficulty];
+            targetColors = Array(settings.colors).fill().map(generateRandomColor);
+            timeLeft = settings.timePerColor * settings.colors;
+            score = 0;
+            currentColorIndex = 0;
+            gameStatus = 'playing';
+            updateUI();
+            gameInterval = setInterval(updateGame, 1000);
+
+            if (currentMode === 'colorBlind') {
+                showColorBlindInfo();
+            }
+        }
+
+        function updateGame() {
+            if (gameStatus === 'playing') {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    endGame();
+                } else {
+                    updateUI();
+                    if (timeLeft <= 10) {
+                        lowTimeSound.play();
+                    }
+                }
+            }
+        }
+
+        function calculateScore() {
+            const targetColor = targetColors[currentColorIndex];
+            const playerColor = {
+                r: parseInt(document.getElementById('redSlider').value),
+                g: parseInt(document.getElementById('greenSlider').value),
+                b: parseInt(document.getElementById('blueSlider').value)
+            };
+            const diff = Math.sqrt(
+                Math.pow(targetColor.r - playerColor.r, 2) +
+                Math.pow(targetColor.g - playerColor.g, 2) +
+                Math.pow(targetColor.b - playerColor.b, 2)
+            );
+            return Math.max(0, 100 - Math.floor(diff / 4.42));
+        }
+
+        function updateUI() {
+            document.getElementById('modeSelection').style.display = 'none';
+            document.getElementById('difficultySelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('pauseResumeBtn').style.display = 'inline-block';
+            document.getElementById('skipBtn').style.display = 'inline-block';
+            document.getElementById('hintBtn').style.display = 'inline-block';
+
+            const targetColor = targetColors[currentColorIndex];
+            document.getElementById('targetColor').style.backgroundColor = rgbToString(targetColor);
+            document.getElementById('timeLeft').textContent = timeLeft;
+            document.getElementById('score').textContent = score;
+            document.getElementById('currentColor').textContent = currentColorIndex + 1;
+            document.getElementById('totalColors').textContent = targetColors.length;
+
+            document.getElementById('pauseResumeBtn').textContent = gameStatus === 'playing' ? 'Pause' : 'Resume';
+
+            if (currentMode === 'colorBlind') {
+                document.getElementById('colorBlindInfo').style.display = 'block';
+                showColorBlindInfo();
+            } else {
+                document.getElementById('colorBlindInfo').style.display = 'none';
+            }
+
+            // Show color theory info for all modes
+            document.getElementById('colorTheoryInfo').style.display = 'block';
+            showColorTheoryInfo();
+
+            updateHexCode();
+            updateProgressBar();
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentColorIndex + 1) / targetColors.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function updateHexCode() {
+            const playerColor = {
+                r: parseInt(document.getElementById('redSlider').value),
+                g: parseInt(document.getElementById('greenSlider').value),
+                b: parseInt(document.getElementById('blueSlider').value)
+            };
+            document.getElementById('hexCode').textContent = `Hex: ${rgbToHex(playerColor)}`;
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            gameStatus = 'finished';
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('maxScore').textContent = difficultySettings[currentDifficulty].maxScore;
+            updateLeaderboard();
+        }
+
+        function updateLeaderboard() {
+            leaderboard.push({ score, mode: currentMode, difficulty: currentDifficulty });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 5);  // Keep only top 5 scores
+
+            const leaderboardBody = document.getElementById('leaderboardBody');
+            leaderboardBody.innerHTML = '';
+            leaderboard.forEach((entry, index) => {
+                const row = leaderboardBody.insertRow();
+                row.insertCell(0).textContent = index + 1;
+                row.insertCell(1).textContent = entry.score;
+                row.insertCell(2).textContent = modeSettings[entry.mode].name;
+                row.insertCell(3).textContent = entry.difficulty;
+            });
+
+            document.getElementById('leaderboard').style.display = 'block';
+        }
+
+        function showHint() {
+            const targetColor = targetColors[currentColorIndex];
+            const hint = `Target: R:${targetColor.r}, G:${targetColor.g}, B:${targetColor.b} (${rgbToHex(targetColor)})`;
+            document.getElementById('colorHint').textContent = hint;
+            setTimeout(() => {
+                document.getElementById('colorHint').textContent = '';
+            }, 3000);
+        }
+
+        function createBackgroundAnimation() {
+            const container = document.getElementById('backgroundAnimation');
+            const colors = ['#ff6b6b', '#4ecdc4', '#45aaf2'];
+            for (let i = 0; i < 50; i++) {
+                const div = document.createElement('div');
+                div.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                div.style.left = `${Math.random() * 100}%`;
+                div.style.top = `${Math.random() * 100}%`;
+                div.style.width = `${Math.random() * 50 + 10}px`;
+                div.style.height = div.style.width;
+                div.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                div.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(div);
+            }
+        }
+
+        function showColorTheoryInfo() {
+            const targetColor = targetColors[currentColorIndex];
+            const hsl = rgbToHsl(targetColor.r, targetColor.g, targetColor.b);
+            let colorType = '';
+            if (hsl[1] < 0.1) {
+                colorType = 'Neutral';
+            } else if (hsl[0] < 30 || hsl[0] > 330) {
+                colorType = 'Warm';
+            } else if (hsl[0] >= 30 && hsl[0] <= 330) {
+                colorType = 'Cool';
+            }
+            
+            const info = `
+                <h3>Color Theory</h3>
+                <p>Current color: ${colorType}</p>
+                <p>Hue: ${Math.round(hsl[0])}°</p>
+                <p>Saturation: ${Math.round(hsl[1] * 100)}%</p>
+                <p>Lightness: ${Math.round(hsl[2] * 100)}%</p>
+                <p>Tip: ${getColorTheoryTip(hsl)}</p>
+            `;
+            document.getElementById('colorTheoryInfo').innerHTML = info;
+        }
+
+        function showColorBlindInfo() {
+            const targetColor = targetColors[currentColorIndex];
+            const simulatedColors = {
+                protanopia: simulateColorBlindness(targetColor, 'protanopia'),
+                deuteranopia: simulateColorBlindness(targetColor, 'deuteranopia'),
+                tritanopia: simulateColorBlindness(targetColor, 'tritanopia')
+            };
+            
+            const info = `
+                <h3>Color Blind Simulation</h3>
+                <p>Original: ${rgbToHex(targetColor)}</p>
+                <p>Protanopia: ${rgbToHex(simulatedColors.protanopia)}</p>
+                <p>Deuteranopia: ${rgbToHex(simulatedColors.deuteranopia)}</p>
+                <p>Tritanopia: ${rgbToHex(simulatedColors.tritanopia)}</p>
+                <p>Tip: Choose colors with high contrast for better accessibility.</p>
+            `;
+            document.getElementById('colorBlindInfo').innerHTML = info;
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return [h * 360, s, l];
+        }
+
+        function getColorTheoryTip(hsl) {
+            const [hue, saturation, lightness] = hsl;
+            if (saturation < 0.1) {
+                return "This is a neutral color. It can be paired with almost any other color.";
+            } else if (lightness < 0.2) {
+                return "This is a dark color. Consider pairing it with lighter colors for contrast.";
+            } else if (lightness > 0.8) {
+                return "This is a light color. Consider pairing it with darker colors for contrast.";
+            } else {
+                return "This is a vibrant color. Consider using it as an accent with neutral colors.";
+            }
+        }
+
+        function simulateColorBlindness(color, type) {
+            // This is a simplified simulation. For more accurate results, use a color blindness simulation library.
+            const { r, g, b } = color;
+            switch (type) {
+                case 'protanopia':
+                    return { r: 0.567 * r + 0.433 * g, g: 0.558 * r + 0.442 * g, b: 0.242 * r + 0.758 * b };
+                case 'deuteranopia':
+                    return { r: 0.625 * r + 0.375 * g, g: 0.7 * r + 0.3 * g, b: 0.3 * r + 0.7 * b };
+                case 'tritanopia':
+                    return { r: 0.95 * r + 0.05 * g, g: 0.433 * r + 0.567 * g, b: 0.475 * r + 0.525 * g };
+                default:
+                    return color;
+            }
+        }
+
+        function goToHome() {
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('difficultySelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'none';
+            clearInterval(gameInterval);
+            gameStatus = 'idle';
+        }
+
+        // Event Listeners
+        document.getElementById('themeToggle').addEventListener('change', (e) => {
+            setTheme(e.target.checked ? 'dark' : 'light');
+        });
+
+        document.querySelectorAll('.mode-buttons button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentMode = btn.id.replace('Mode', '');
+                document.getElementById('modeSelection').style.display = 'none';
+                document.getElementById('difficultySelection').style.display = 'block';
+            });
+        });
+
+        document.querySelectorAll('.difficulty-buttons button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentDifficulty = btn.id.replace('Mode', '');
+                document.getElementById('difficultySelection').style.display = 'none';
+                document.getElementById('gameArea').style.display = 'block';
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseResumeBtn').style.display = 'none';
+                document.getElementById('skipBtn').style.display = 'none';
+                document.getElementById('hintBtn').style.display = 'none';
+            });
+        });
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('leaderboard').style.display = 'none';
+        });
+
+        document.getElementById('pauseResumeBtn').addEventListener('click', () => {
+            if (gameStatus === 'playing') {
+                gameStatus = 'paused';
+                clearInterval(gameInterval);
+            } else if (gameStatus === 'paused') {
+                gameStatus = 'playing';
+                gameInterval = setInterval(updateGame, 1000);
+            }
+            updateUI();
+        });
+
+        document.getElementById('skipBtn').addEventListener('click', () => {
+            if (gameStatus === 'playing' || gameStatus === 'paused') {
+                score += calculateScore();
+                currentColorIndex++;
+                if (currentColorIndex >= targetColors.length) {
+                    endGame();
+                } else {
+                    updateUI();
+                }
+            }
+        });
+
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', () => {
+                const playerColor = {
+                    r: parseInt(document.getElementById('redSlider').value),
+                    g: parseInt(document.getElementById('greenSlider').value),
+                    b: parseInt(document.getElementById('blueSlider').value)
+                };
+                document.getElementById('playerColor').style.backgroundColor = rgbToString(playerColor);
+                updateHexCode();
+            });
+        });
+
+        document.getElementById('homeButton').addEventListener('click', goToHome);
+        document.getElementById('backToDifficultyButton').addEventListener('click', () => {
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('difficultySelection').style.display = 'none';
+        });
+        document.getElementById('backToHomeButton').addEventListener('click', goToHome);
+
+        document.getElementById('tutorialBtn').addEventListener('click', () => {
+            document.getElementById('tutorial').style.display = 'block';
+        });
+
+        document.querySelector('.close-tutorial').addEventListener('click', () => {
+            document.getElementById('tutorial').style.display = 'none';
+        });
+
+        // Initialize
+        createBackgroundAnimation();
+        setTheme('light');
+    </script>
+    <footer>&copy All rights Reserved Arjan Chaudhary</footer>
+</body>
+</html>
